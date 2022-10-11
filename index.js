@@ -162,16 +162,15 @@ const ftxTrailingStop = (market, quantity, stop) => {
 }
 
 const executeTrade = (keyword) => {
-	const cleanKW = keyword.split(/[^a-zA-Z0-9]/).join('').toUpperCase();
-	const market = config.market.split('{KEYWORD}').join(cleanKW);
+	const market = config.market;
 	if (!markets[market]) return false;
 	const price = markets[market];
 	const quantity = round(config.usdValue / price);
 	console.log(`Executing trade ${market} ${quantity} (${new Date().getTime()})`);
-	ftxOrder(market, quantity);
+	//ftxOrder(market, quantity);
 	const trailingStop =  round((config.trailingStopPercentage * -0.01) * price);
 	console.log(`Setting trailing stop ${market} ${quantity} ${trailingStop}  (${new Date().getTime()})`);
-	ftxTrailingStop(market, quantity, trailingStop);
+	//ftxTrailingStop(market, quantity, trailingStop);
 }
 
 const init = async () => {
