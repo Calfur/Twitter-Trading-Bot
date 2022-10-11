@@ -23,7 +23,7 @@ Using the market: '{KEYWORD}-PERP' will inject a stripped down upper case versio
 ```
 apt install nodejs
 apt install npm
-git clone https://github.com/jamesbachini/Twitter-Trading-Bot.git
+git clone https://github.com/Calfur/Twitter-Trading-Bot.git
 cd Twitter-Trading-Bot
 mv config-example.js config.js
 nano config.js
