@@ -12,6 +12,7 @@ const client = new Twitter({
 	consumer_secret: config.twitterAPI.consumer_secret,
 	access_token_key: config.twitterAPI.access_token_key,
 	access_token_secret: config.twitterAPI.access_token_secret,
+	bearer_token: config.twitterAPI.bearer_token,
 });
 
 

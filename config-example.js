@@ -11,6 +11,7 @@ config =  {
 		"consumer_secret": "123",
 		"access_token_key": "123-abc",
 		"access_token_secret": "123",
+		"bearer_token": "AAA...",
 	},
 	ftxAPI: {
 		subAccount: `TESTACC1`,
