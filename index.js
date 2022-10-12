@@ -79,12 +79,12 @@ const startStream = async (followerIDs) => {
    await new Promise(r => setTimeout(r, 2000));
 
    twitterStream = await twitterClient.v2.searchStream({
-     "tweet.fields": [
+      "tweet.fields": [
          "text"
-     ],
-     "expansions": [
+      ],
+      "expansions": [
          "author_id"
-     ]
+      ]
    });
 
    await deleteAllExistingRules();
@@ -100,11 +100,11 @@ const startStream = async (followerIDs) => {
    twitterStream.on(
       // Emitted when a Twitter payload (a tweet or not, given the endpoint).
       TwitterApi.ETwitterStreamEvent.Data,
-      eventData => console.log('Twitter has sent something:', eventData),
+      eventData => processTweet(eventData),
    );
-   
+
    console.log(TwitterApi.ETwitterStreamEvent.Data);
-   
+
    twitterStream.on(
       // Emitted when Node.js {response} emits a 'error' event (contains its payload).
       TwitterApi.ETwitterStreamEvent.ConnectionError,
@@ -242,6 +242,51 @@ init();
 process.on('unhandledRejection', (reason, p) => {
    console.log('ERROR 110', reason);
 });
+
+function processTweet(eventData) {
+   console.log('Twitter has sent something:', eventData);
+   var text = eventData.data.text;
+   console.log('Text:', text);
+
+   var cpi = extractCpi(text);
+   var coreCpi = extractCoreCpi(text);
+   console.log({ cpi, coreCpi });
+
+   if (isNumeric(cpi) && isNumeric(coreCpi)) {
+      if (cpi <= 7.9 && cpi >= 5 && coreCpi <= 6.3 && coreCpi >= 4 ) {
+         openLongPosition();
+      } else if (cpi >= 8.3 && cpi <= 15 && coreCpi >= 6.6 && coreCpi <= 13) {
+         openShortPosition();
+      } else {
+         console.log("Might not be worth a trade :/");
+      }
+   } else {
+      console.log("These are no valid numbers :/");
+   }
+}
+
+function isNumeric(str) {
+   if (typeof str != "string") return false
+   return !isNaN(str) && !isNaN(parseFloat(str))
+}
+
+function extractCpi(text) {
+   var cpi = /(?<=U.S. CPI: \+)(.{1,5})(?=% YEAR-OVER-YEAR)/.exec(text)[0];
+   return cpi;
+}
+
+function extractCoreCpi(text) {
+   var coreCpi = /(?<=U.S. CORE CPI: \+)(.{1,5})(?=% YEAR-OVER-YEAR)/.exec(text)[0];
+   return coreCpi;
+}
+
+function openLongPosition() {
+   console.log("LONG!");
+}
+
+function openShortPosition() {
+   console.log("SHORT!");
+}
 
 async function logCurrentStreamRules() {
    var streamRules = await twitterClient.v2.streamRules();
