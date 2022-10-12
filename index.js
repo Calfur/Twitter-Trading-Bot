@@ -50,19 +50,19 @@ const sortFollowerIDs = () => {
 const deleteAllExistingRules = async () => {
    var streamRules = await twitterClient.v2.streamRules();
 
-   if(streamRules.data == null){
+   if (streamRules.data == null) {
       console.log("No rules found to delete :)");
-   } else{
+   } else {
       idsToDelete = streamRules.data.map(streamRule => streamRule.id);
-   
+
       console.log(idsToDelete);
-   
+
       var deletedRules = await twitterClient.v2.updateStreamRules({
          delete: {
             ids: idsToDelete,
          },
       });
-   
+
       console.log(deletedRules.meta);
    }
 }
@@ -78,7 +78,14 @@ const startStream = async (followerIDs) => {
 
    await new Promise(r => setTimeout(r, 2000));
 
-   twitterStream = await twitterClient.v2.getStream("tweets/search/stream/rules");
+   twitterStream = await twitterClient.v2.searchStream({
+     "tweet.fields": [
+         "text"
+     ],
+     "expansions": [
+         "author_id"
+     ]
+   });
 
    await deleteAllExistingRules();
 
@@ -87,9 +94,34 @@ const startStream = async (followerIDs) => {
          { value: '(from:Calfur_Test)', tag: 'Tweets from @Calfur_test' },
       ],
    });
-   
+
    await logCurrentStreamRules();
+
+   twitterStream.on(
+      // Emitted when a Twitter payload (a tweet or not, given the endpoint).
+      TwitterApi.ETwitterStreamEvent.Data,
+      eventData => console.log('Twitter has sent something:', eventData),
+   );
    
+   console.log(TwitterApi.ETwitterStreamEvent.Data);
+   
+   twitterStream.on(
+      // Emitted when Node.js {response} emits a 'error' event (contains its payload).
+      TwitterApi.ETwitterStreamEvent.ConnectionError,
+      err => console.log('Connection error!', err),
+   );
+
+   twitterStream.on(
+      // Emitted when Node.js {response} is closed by remote or using .close().
+      TwitterApi.ETwitterStreamEvent.ConnectionClosed,
+      () => console.log('Connection has been closed. Starting Stream again.'),
+   );
+
+   // Enable reconnect feature
+   twitterStream.autoReconnect = true;
+
+   console.log('Twitter API Stream Started');
+
    /*
 
    twitterStream.on('data', (tweet) => {
@@ -108,29 +140,6 @@ const startStream = async (followerIDs) => {
          }
       });
    });
-
-   twitterStream.on('error', (error) => {
-      console.log(error);
-   });
-
-   twitterStream.on('disconnect', (error) => {
-      console.log('Stream Disconnected...');
-      startStream();
-   });
-
-   twitterStream.on('reconnect', (request, response, connectInterval) => {
-      console.log('Waiting to reconnect in ' + connectInterval + 'ms');
-      setTimeout(() => {
-         startStream();
-      }, connectInterval + 100);
-   });
-
-   console.log('Twitter API Stream Started');
-
-   setTimeout(() => {
-      twitterStream.destroy();
-      startStream(followerIDs);
-   }, 3600000); // reset stream
    
    */
 }
