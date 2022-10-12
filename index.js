@@ -26,30 +26,30 @@ const round = (num, decimals = 8, down = false) => {
    return Number(roundedNumber);
 }
 
-const getID = async (username) => {
+const getUser = async (username) => {
    return new Promise((resolve, reject) => {
-      twitterClient.v1.get('users/lookup', { screen_name: username }, (error, tweets, response) => {
-         if (error) console.log(username, error);
-         const twitterID = JSON.parse(response.body)[0].id_str;
-         resolve(twitterID);
-      });
+      user = twitterClient.v2.userByUsername(username);
+      resolve(user);
    });
 }
 
 const sortFollowerIDs = () => {
+   console.log("sortFollowerIDs");
    return new Promise((resolve, reject) => {
       const followerIDs = [];
       config.follows.forEach(async (screenname, i) => {
          await new Promise(r => setTimeout(r, i * 500));
-         const twitterID = await getID(screenname);
-         console.log(`TwitterID: ${screenname} ${twitterID}`);
-         followerIDs.push(twitterID);
+         const user = await getUser(screenname);
+         const userId = user.data.id;
+         console.log(`TwitterID: ${screenname} ${userId}`);
+         followerIDs.push(userId);
          if (followerIDs.length === config.follows.length) resolve(followerIDs);
       });
    });
 }
 
 const startStream = async (followerIDs) => {
+   console.log("startStream");
    const filter = { filter_level: 'none', from: followerIDs.join(',') };
    twitterClient.v1.stream('/2/tweets/search/stream', filter, async (stream) => {
       if (twitterStream.destroy) twitterStream.destroy(); // close old stream
