@@ -9,15 +9,6 @@ let twitterStream = {};
 
 const twitterClient = new TwitterApi.TwitterApi(config.twitterAPI.bearer_token).readOnly;
 
-/*
-{
-   appKey: config.twitterAPI.consumer_key,
-   appSecret: config.twitterAPI.consumer_secret,
-   accessToken: config.twitterAPI.access_token_key,
-   accessSecret: config.twitterAPI.access_token_secret,
-}
-*/
-
 const round = (num, decimals = 8, down = false) => {
    if (typeof num !== 'number') num = parseFloat(num);
    const multiplier = 10 ** decimals;
@@ -121,27 +112,6 @@ const startStream = async (followerIDs) => {
    twitterStream.autoReconnect = true;
 
    console.log('Twitter API Stream Started');
-
-   /*
-
-   twitterStream.on('data', (tweet) => {
-      //console.log(tweet);
-      let tweetText = tweet.text;
-      if (tweet.extended_tweet && tweet.extended_tweet.full_text) {
-         tweetText = tweet.extended_tweet.full_text;
-      }
-      tweetText = tweetText.toLowerCase();
-      if (!followerIDs.includes(tweet.user.id_str)) return false;
-      console.log(`[${tweet.user.screen_name}] ${tweetText} (${new Date().getTime()})`);
-      config.keywords.forEach((kw) => {
-         const keyword = kw.toLowerCase();
-         if (tweetText.includes(keyword)) {
-            executeTrade(keyword);
-         }
-      });
-   });
-   
-   */
 }
 
 const sortMarkets = async () => {
@@ -159,11 +129,11 @@ const sortMarkets = async () => {
    });
 }
 
-const ftxOrder = (market, quantity) => {
+const ftxOrder = (market, quantity, side) => {
    const ts = new Date().getTime();
    const query = {
       market: market,
-      side: 'buy',
+      side: side,
       size: quantity,
       type: 'market',
       price: 0,
@@ -222,10 +192,10 @@ const executeTrade = (keyword) => {
    const price = markets[market];
    const quantity = round(config.usdValue / price);
    console.log(`Executing trade ${market} ${quantity} (${new Date().getTime()})`);
-   //ftxOrder(market, quantity);
+   ftxOrder(market, quantity);
    const trailingStop = round((config.trailingStopPercentage * -0.01) * price);
    console.log(`Setting trailing stop ${market} ${quantity} ${trailingStop}  (${new Date().getTime()})`);
-   //ftxTrailingStop(market, quantity, trailingStop);
+   ftxTrailingStop(market, quantity, trailingStop);
 }
 
 const init = async () => {
@@ -281,10 +251,12 @@ function extractCoreCpi(text) {
 }
 
 function openLongPosition() {
+   ftxOrder(config.market, config.marketValue, 'buy')
    console.log("LONG!");
 }
 
 function openShortPosition() {
+   ftxOrder(config.market, config.marketValue, 'sell')
    console.log("SHORT!");
 }
 
