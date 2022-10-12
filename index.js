@@ -55,7 +55,7 @@ const deleteAllExistingRules = async () => {
    } else{
       idsToDelete = streamRules.data.map(streamRule => streamRule.id);
    
-      console.log({idsToDelete});
+      console.log(idsToDelete);
    
       var deletedRules = await twitterClient.v2.updateStreamRules({
          delete: {
@@ -63,7 +63,7 @@ const deleteAllExistingRules = async () => {
          },
       });
    
-      console.log({deletedRules});
+      console.log(deletedRules.meta);
    }
 }
 
@@ -88,10 +88,7 @@ const startStream = async (followerIDs) => {
       ],
    });
    
-   var streamRules = await twitterClient.v2.streamRules();
-
-   // Log every rule ID
-   console.log(streamRules);
+   await logCurrentStreamRules();
    
    /*
 
@@ -236,3 +233,8 @@ init();
 process.on('unhandledRejection', (reason, p) => {
    console.log('ERROR 110', reason);
 });
+
+async function logCurrentStreamRules() {
+   var streamRules = await twitterClient.v2.streamRules();
+   console.log({ "streamRules": streamRules.meta });
+}
