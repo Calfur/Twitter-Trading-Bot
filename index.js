@@ -1,4 +1,4 @@
-const Twitter = require('twitter-api-v2');
+const TwitterApi = require('twitter-api-v2');
 const request = require('request');
 const crypto = require('crypto');
 
