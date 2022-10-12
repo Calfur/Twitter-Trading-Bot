@@ -1,4 +1,4 @@
-import { TwitterApi } from 'twitter-api-v2';
+const TwitterApi = require('twitter-api-v2');
 const request = require('request');
 const crypto = require('crypto');
 
@@ -7,8 +7,7 @@ const config = require('./config.js');
 const markets = {};
 let twitterStream = {};
 
-const twitterClient = new TwitterApi(config.twitterAPI.bearer_token);
-twitterClient = twitterClient.readOnly;
+const twitterClient = new TwitterApi.TwitterApi(config.twitterAPI.bearer_token).readOnly;
 
 /*
 {
