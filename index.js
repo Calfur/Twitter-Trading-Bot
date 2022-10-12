@@ -34,7 +34,6 @@ const getUser = async (username) => {
 }
 
 const sortFollowerIDs = () => {
-   console.log("sortFollowerIDs");
    return new Promise((resolve, reject) => {
       const followerIDs = [];
       config.follows.forEach(async (screenname, i) => {
@@ -48,48 +47,95 @@ const sortFollowerIDs = () => {
    });
 }
 
+const deleteAllExistingRules = async () => {
+   var streamRules = await twitterClient.v2.streamRules();
+
+   if(streamRules.data == null){
+      console.log("No rules found to delete :)");
+   } else{
+      idsToDelete = streamRules.data.map(streamRule => streamRule.id);
+   
+      console.log({idsToDelete});
+   
+      var deletedRules = await twitterClient.v2.updateStreamRules({
+         delete: {
+            ids: idsToDelete,
+         },
+      });
+   
+      console.log({deletedRules});
+   }
+}
+
 const startStream = async (followerIDs) => {
    console.log("startStream");
+
    const filter = { filter_level: 'none', from: followerIDs.join(',') };
-   twitterClient.v1.stream('/2/tweets/search/stream', filter, async (stream) => {
-      if (twitterStream.destroy) twitterStream.destroy(); // close old stream
-      await new Promise(r => setTimeout(r, 2000));
-      twitterStream = stream;
-      twitterStream.on('data', (tweet) => {
-         //console.log(tweet);
-         let tweetText = tweet.text;
-         if (tweet.extended_tweet && tweet.extended_tweet.full_text) {
-            tweetText = tweet.extended_tweet.full_text;
-         }
-         tweetText = tweetText.toLowerCase();
-         if (!followerIDs.includes(tweet.user.id_str)) return false;
-         console.log(`[${tweet.user.screen_name}] ${tweetText} (${new Date().getTime()})`);
-         config.keywords.forEach((kw) => {
-            const keyword = kw.toLowerCase();
-            if (tweetText.includes(keyword)) {
-               executeTrade(keyword);
-            }
-         });
-      });
-      twitterStream.on('error', (error) => {
-         console.log(error);
-      });
-      twitterStream.on('disconnect', (error) => {
-         console.log('Stream Disconnected...');
-         startStream();
-      });
-      twitterStream.on('reconnect', (request, response, connectInterval) => {
-         console.log('Waiting to reconnect in ' + connectInterval + 'ms');
-         setTimeout(() => {
-            startStream();
-         }, connectInterval + 100);
-      });
-      console.log('Twitter API Stream Started');
-      setTimeout(() => {
-         twitterStream.destroy();
-         startStream(followerIDs);
-      }, 3600000); // reset stream
+
+   if (twitterStream.destroy) {
+      twitterStream.destroy() // close old stream
+   };
+
+   await new Promise(r => setTimeout(r, 2000));
+
+   twitterStream = await twitterClient.v2.getStream("tweets/search/stream/rules");
+
+   await deleteAllExistingRules();
+
+   var addedRules = await twitterClient.v2.updateStreamRules({
+      add: [
+         { value: '(from:Calfur_Test)', tag: 'Tweets from @Calfur_test' },
+      ],
    });
+   
+   var streamRules = await twitterClient.v2.streamRules();
+
+   // Log every rule ID
+   console.log(streamRules);
+   
+   /*
+
+   twitterStream.on('data', (tweet) => {
+      //console.log(tweet);
+      let tweetText = tweet.text;
+      if (tweet.extended_tweet && tweet.extended_tweet.full_text) {
+         tweetText = tweet.extended_tweet.full_text;
+      }
+      tweetText = tweetText.toLowerCase();
+      if (!followerIDs.includes(tweet.user.id_str)) return false;
+      console.log(`[${tweet.user.screen_name}] ${tweetText} (${new Date().getTime()})`);
+      config.keywords.forEach((kw) => {
+         const keyword = kw.toLowerCase();
+         if (tweetText.includes(keyword)) {
+            executeTrade(keyword);
+         }
+      });
+   });
+
+   twitterStream.on('error', (error) => {
+      console.log(error);
+   });
+
+   twitterStream.on('disconnect', (error) => {
+      console.log('Stream Disconnected...');
+      startStream();
+   });
+
+   twitterStream.on('reconnect', (request, response, connectInterval) => {
+      console.log('Waiting to reconnect in ' + connectInterval + 'ms');
+      setTimeout(() => {
+         startStream();
+      }, connectInterval + 100);
+   });
+
+   console.log('Twitter API Stream Started');
+
+   setTimeout(() => {
+      twitterStream.destroy();
+      startStream(followerIDs);
+   }, 3600000); // reset stream
+   
+   */
 }
 
 const sortMarkets = async () => {
