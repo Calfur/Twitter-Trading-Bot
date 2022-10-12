@@ -1,10 +1,9 @@
 {
-  "name": "Twitter-Trading-Bot",
+  "name": "twitter-trading-bot",
   "version": "0.1.1",
-  "author": "James Bachini",
+  "author": "Calfur",
   "description": "A quick and simple script for social trading based on Twitter mentions",
-  "homepage": "https://jamesbachini.com/twitter-trading-bot/",
-  "repository": "github:jamesbachini/Twitter-Trading-Bot",
+  "repository": "github:calfur/Twitter-Trading-Bot",
   "license": "GPLv3",
   "engines": {
     "node": ">=0.10"

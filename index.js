@@ -48,8 +48,8 @@ const sortFollowerIDs = () => {
 }
 
 const startStream = async (followerIDs) => {
-	const filter = { filter_level: 'none', follow: followerIDs.join(',') };
-	client.stream('statuses/filter', filter,  async (stream) => {
+	const filter = { filter_level: 'none', from: followerIDs.join(',') };
+	client.stream('/2/tweets/search/stream', filter,  async (stream) => {
 		if (twitterStream.destroy) twitterStream.destroy(); // close old stream
 		await new Promise(r => setTimeout(r, 2000));
 		twitterStream = stream;
