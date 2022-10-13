@@ -17,6 +17,10 @@ process.on('unhandledRejection', (reason, p) => {
 async function initialize() {
    const users = await getUsers();
 
+   if (users.length == 0) {
+      console.error("No user found. Please configure valid twitter user names.");
+   }
+
    startStream(users);
 }
 
@@ -24,12 +28,12 @@ function getUsers() {
    return new Promise((resolve, reject) => {
       const userDatas = [];
 
-      config.follows.forEach(async (userName, i) => {
+      config.twitterUserNames.forEach(async (userName, i) => {
          await new Promise(r => setTimeout(r, i * 500));
          const user = await getUser(userName);
 
          userDatas.push(user.data);
-         if (userDatas.length === config.follows.length) {
+         if (userDatas.length === config.twitterUserNames.length) {
             resolve(user.data)
          };
       });
@@ -59,7 +63,15 @@ async function startStream(users) {
    });
 
    await deleteAllExistingRules();
+   await addRulesToTwitterStream(users);
 
+   addEventHandlers(twitterStream);
+   enableAutoReconnect(twitterStream);
+
+   console.log('Twitter API Stream Started');
+}
+
+async function addRulesToTwitterStream(users) {
    var addedRules = await twitterClient.v2.updateStreamRules({
       add: [
          { value: `(from:${users.name})`, tag: `Tweets from ${users.name}` },
@@ -69,15 +81,14 @@ async function startStream(users) {
    console.log(`Sumary of rule creation: ${addedRules.meta.sumary}`);
    console.log(addedRules.data);
 
-   addStreamEvents(twitterStream);
-
-   // Enable reconnect feature
-   twitterStream.autoReconnect = true;
-
-   console.log('Twitter API Stream Started');
+   return addedRules;
 }
 
-function addStreamEvents(twitterStream) {
+function enableAutoReconnect(twitterStream) {
+   twitterStream.autoReconnect = true;
+}
+
+function addEventHandlers(twitterStream) {
    twitterStream.on(
       // Emitted when a Twitter payload (a tweet or not, given the endpoint).
       TwitterApi.ETwitterStreamEvent.Data,
@@ -102,22 +113,21 @@ async function deleteAllExistingRules() {
 
    var streamRules = await twitterClient.v2.streamRules();
 
-   if (streamRules.data != null) {
-      idsToDelete = streamRules.data.map(streamRule => streamRule.id);
-
-      console.log(idsToDelete);
-
-      var deletedRules = await twitterClient.v2.updateStreamRules({
-         delete: {
-            ids: idsToDelete,
-         },
-      });
-
-      console.log("Deleted rules:");
-      console.log(deletedRules);
-   } else {
-      console.log("No rules found to delete.")
+   if (streamRules.data == null) {
+      console.log("No rules found to delete.");
+      return;
    }
+
+   idsToDelete = streamRules.data.map(streamRule => streamRule.id);
+
+   var deletedRules = await twitterClient.v2.updateStreamRules({
+      delete: {
+         ids: idsToDelete,
+      },
+   });
+
+   console.log("Deleted rules:");
+   console.log(deletedRules);
 }
 
 function processTweet(eventData) {
@@ -168,16 +178,16 @@ function openShortPosition() {
    log("SHORT!");
 }
 
-function log(text){
+function log(text) {
    var timeSinceTweet = getTimeSinceTweet();
    var logStamp = timeSinceTweet != null ? `Tweet+${timeSinceTweet}: ` : ``;
    console.log(`${logStamp}${text}`);
 }
 
-function getTimeSinceTweet(){
-   if(tweetTime == null){
+function getTimeSinceTweet() {
+   if (tweetTime == null) {
       return null;
    }
-   
+
    return Date.now() - tweetTime;
 }

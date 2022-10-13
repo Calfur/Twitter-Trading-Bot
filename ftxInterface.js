@@ -29,6 +29,7 @@ function ftxOrder(market, quantity, side) {
    });
 }
 
+/*
 function ftxTrailingStop(market, quantity, stop) {
    const ts = new Date().getTime();
    const query = {
@@ -57,3 +58,4 @@ function ftxTrailingStop(market, quantity, stop) {
       }
    });
 }
+*/
