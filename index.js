@@ -15,11 +15,15 @@ process.on('unhandledRejection', (reason, p) => {
 });
 
 async function initialize() {
+   log("Getting users from twitter API...");
    const users = await getUsers();
-
+   
    if (users.length == 0) {
       console.error("No user found. Please configure valid twitter user names.");
    }
+
+   log(`${users.length} users found`);
+   console.log(users);
 
    startStream(users);
 }
@@ -34,7 +38,7 @@ function getUsers() {
 
          userDatas.push(user.data);
          if (userDatas.length === config.twitterUserNames.length) {
-            resolve(user.data)
+            resolve(userDatas)
          };
       });
    });
@@ -49,11 +53,16 @@ async function getUser(username) {
 
 async function startStream(users) {
    if (twitterStream.destroy) {
+      log("Deleting old stream connection...");
       twitterStream.destroy() // close old stream
-      console.log("Old stream destroyed");
    };
 
    await new Promise(r => setTimeout(r, 2000));
+
+   await deleteAllExistingRules();
+   await addRulesToTwitterStream(users);
+
+   log('Starting Twitter API Stream...');
 
    twitterStream = await twitterClient.v2.searchStream({
       "tweet.fields": [
@@ -62,24 +71,28 @@ async function startStream(users) {
       ]
    });
 
-   await deleteAllExistingRules();
-   await addRulesToTwitterStream(users);
-
    addEventHandlers(twitterStream);
    enableAutoReconnect(twitterStream);
 
-   console.log('Twitter API Stream Started');
+   log('Twitter API Stream Started...');
 }
 
 async function addRulesToTwitterStream(users) {
+   log("Creating rules...");
+
+   var rules = [];
+   users.forEach(user => rules.push(
+      { value: `(from:${user.id})`, tag: `Tweets from ${user.name}` }
+   ));
+
    var addedRules = await twitterClient.v2.updateStreamRules({
-      add: [
-         { value: `(from:${users.name})`, tag: `Tweets from ${users.name}` },
-      ],
+      add: rules,
    });
 
-   console.log(`Sumary of rule creation: ${addedRules.meta.sumary}`);
-   console.log(addedRules.data);
+   log("Sumary of rule creation: ");
+   console.log(addedRules.meta.summary);
+   log("Added rules: ");
+   addedRules.data.forEach(addedRule => console.log(addedRule));
 
    return addedRules;
 }
@@ -127,18 +140,18 @@ async function deleteAllExistingRules() {
    });
 
    console.log("Deleted rules:");
-   console.log(deletedRules);
+   console.log(deletedRules.meta);
 }
 
 function processTweet(eventData) {
-   tweetTime = eventData.data.created_at;
-   log('Twitter has sent something:', eventData);
+   tweetTime = new Date(eventData.data.created_at);
+   log('Processing Tweet...');
    var tweetText = eventData.data.text;
-   log('Text:', tweetText);
+   log(`Text: ${tweetText}`);
 
    var cpi = extractCpi(tweetText);
    var coreCpi = extractCoreCpi(tweetText);
-   log({ cpi, coreCpi });
+   log(`CPI: ${cpi} CORE CPI: ${coreCpi}`);
 
    if (isNumeric(cpi) && isNumeric(coreCpi)) {
       if (cpi <= 7.9 && cpi >= 5 && coreCpi <= 6.3 && coreCpi >= 4) {
