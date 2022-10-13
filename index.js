@@ -169,13 +169,13 @@ function extractCoreCpi(text) {
 }
 
 function openLongPosition() {
-   ftxInterface.ftxOrder(config.market, config.marketValue, 'buy')
-   log("LONG!");
+   log(`Try to buy ${config.currencyTradeAmount} ${config.currency}`);
+   ftxInterface.ftxOrder(config.currency, config.currencyTradeAmount, 'buy')
 }
 
 function openShortPosition() {
-   ftxInterface.ftxOrder(config.market, config.marketValue, 'sell')
-   log("SHORT!");
+   log(`Try to sell ${config.currencyTradeAmount} ${config.currency}`);
+   ftxInterface.ftxOrder(config.currency, config.currencyTradeAmount, 'sell')
 }
 
 function log(text) {
