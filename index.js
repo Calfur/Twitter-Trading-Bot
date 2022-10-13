@@ -1,12 +1,12 @@
 const TwitterApi = require('twitter-api-v2');
-
+const FtxInterface = require('./ftxInterface.js') 
 const config = require('./config.js');
-const ftxInterface = require('./ftxInterface.js')
+
+const twitterClient = new TwitterApi.TwitterApi(config.twitterAPI.bearer_token).readOnly;
+const ftxInterface = new FtxInterface();
 
 let twitterStream = {};
 let tweetTime = null;
-
-const twitterClient = new TwitterApi.TwitterApi(config.twitterAPI.bearer_token).readOnly;
 
 initialize();
 
@@ -149,21 +149,27 @@ function processTweet(eventData) {
    var tweetText = eventData.data.text;
    log(`Text: ${tweetText}`);
 
-   var cpi = extractCpi(tweetText);
-   var coreCpi = extractCoreCpi(tweetText);
-   log(`CPI: ${cpi} CORE CPI: ${coreCpi}`);
+   try{
+      var cpi = extractCpi(tweetText);
+      var coreCpi = extractCoreCpi(tweetText);
+      log(`CPI: ${cpi} CORE CPI: ${coreCpi}`);
 
-   if (isNumeric(cpi) && isNumeric(coreCpi)) {
-      if (cpi <= 7.9 && cpi >= 5 && coreCpi <= 6.3 && coreCpi >= 4) {
-         openLongPosition();
-      } else if (cpi >= 8.3 && cpi <= 15 && coreCpi >= 6.6 && coreCpi <= 13) {
-         openShortPosition();
-      } else {
-         log("Might not be worth a trade :/");
+      if (isNumeric(cpi) && isNumeric(coreCpi)) {
+         if (cpi <= 7.9 && cpi >= 5 && coreCpi <= 6.3 && coreCpi >= 4) {
+            openLongPosition();
+         } else if (cpi >= 8.3 && cpi <= 15 && coreCpi >= 6.6 && coreCpi <= 13) {
+            openShortPosition();
+         } else {
+            log("Might not be worth a trade :/");
+         }
       }
-   } else {
-      log("These are no valid numbers :/");
+      else {
+         log("These are no valid numbers :/");
+      }
    }
+   catch (exception){
+      console.log(exception);
+   }    
 }
 
 function isNumeric(str) {
@@ -172,23 +178,33 @@ function isNumeric(str) {
 }
 
 function extractCpi(text) {
-   var cpi = /(?<=U.S. CPI: \+)(.{1,5})(?=% YEAR-OVER-YEAR)/.exec(text)[0];
+   var cpi = /(?<=U.S. CPI: \+)(.{1,5})(?=% YEAR-OVER-YEAR)/.exec(text);
+   if(cpi){
+      cpi = cpi[0];
+   }
    return cpi;
 }
 
 function extractCoreCpi(text) {
-   var coreCpi = /(?<=U.S. CORE CPI: \+)(.{1,5})(?=% YEAR-OVER-YEAR)/.exec(text)[0];
+   var coreCpi = /(?<=U.S. CORE CPI: \+)(.{1,5})(?=% YEAR-OVER-YEAR)/.exec(text);
+   if(coreCpi){
+      coreCpi = coreCpi[0];
+   }
    return coreCpi;
 }
 
-function openLongPosition() {
-   log(`Try to buy ${config.currencyTradeAmount} ${config.currency}`);
-   ftxInterface.ftxOrder(config.currency, config.currencyTradeAmount, 'buy')
+async function openLongPosition() {
+   openPosition('buy');
 }
 
-function openShortPosition() {
-   log(`Try to sell ${config.currencyTradeAmount} ${config.currency}`);
-   ftxInterface.ftxOrder(config.currency, config.currencyTradeAmount, 'sell')
+async function openShortPosition() {
+   openPosition('sell');
+}
+
+async function openPosition(direction){
+   log(`Try to ${direction} ${config.currencyTradeAmount} ${config.currency}`);
+   var message = await ftxInterface.ftxOrder(config.currency, config.currencyTradeAmount, direction);
+   log(message);
 }
 
 function log(text) {
