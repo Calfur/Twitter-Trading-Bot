@@ -150,6 +150,7 @@ function processTweet(eventData) {
    log(`Text: ${tweetText}`);
 
    try{
+      /*
       var cpi = extractCpi(tweetText);
       var coreCpi = extractCoreCpi(tweetText);
       log(`CPI: ${cpi} CORE CPI: ${coreCpi}`);
@@ -165,6 +166,23 @@ function processTweet(eventData) {
       }
       else {
          log("These are no valid numbers :/");
+      }
+      */
+
+      var nonfarmPayrolls = extractNonfarmPayrolls(tweetText);
+      log(`Nonfarm Payrolls: ${nonfarmPayrolls}`);
+
+      if(isNumeric(nonfarmPayrolls)){
+         if(nonfarmPayrolls < 160000){
+            openLongPosition();
+         }else if(nonfarmPayrolls > 260000){
+            openShortPosition();
+         }else{
+            log("Might not be worth a trade :/");
+         }
+      }
+      else {
+         log("This is no valid number :/");
       }
    }
    catch (exception){
@@ -191,6 +209,14 @@ function extractCoreCpi(text) {
       coreCpi = coreCpi[0];
    }
    return coreCpi;
+}
+
+function extractNonfarmPayrolls(text) {
+   var nonfarmPayrolls = /(?<=U.S. NONFARM PAYROLLS: \+)(.{1,8})(?= \(EST\.)/.exec(text);
+   if(nonfarmPayrolls){
+      nonfarmPayrolls = nonfarmPayrolls[0];
+   }
+   return nonfarmPayrolls;
 }
 
 async function openLongPosition() {
